@@ -8,6 +8,5 @@
 - name: Install KeePass XC
   ansible.builtin.apt:
     name: keepassxc
-    update_cache: yes
+    update_cache: true
     state: present
-
