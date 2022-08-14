@@ -42,7 +42,7 @@ galaxy_info:
   #   - 7
   #   - 99.99
   platforms:
-    - name: Debian
+    - name: Ubuntu
       versions:
         - all
 
