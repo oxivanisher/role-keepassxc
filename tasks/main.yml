@@ -10,4 +10,3 @@
     name: keepassxc
     update_cache: true
     state: present
-
