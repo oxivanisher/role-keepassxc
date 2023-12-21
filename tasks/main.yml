@@ -1,14 +1,4 @@
 ---
-- name: Remove legacy apt file
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/ppa_phoerious_keepassxc_jammy.list
-    state: absent
-
-- name: Remove legacy apt file
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/phoerious-ubuntu-keepassxc-focal.list
-    state: absent
-
 - name: Add KeepassXC repo using key from URL
   ansible.builtin.deb822_repository:
     name: keepassxc-ppa
