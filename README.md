@@ -1,5 +1,6 @@
 keepassxc
 ==============
+[![Ansible Lint](https://github.com/oxivanisher/role-keepassxc/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/oxivanisher/role-keepassxc/actions/workflows/ansible-lint.yml)
 
 This role installs Keepass XC.
 
