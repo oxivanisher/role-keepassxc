@@ -1,10 +1,31 @@
 ---
+
+- name: Read upstream-release file on Linux mint
+  ansible.builtin.slurp:
+    src: /etc/upstream-release/lsb-release
+  register: lsb_release_raw
+  when: ansible_distribution|lower == "linux mint"
+
+- name: Decode and parse DISTRIB_CODENAME from upstream-release file on Linux mint
+  ansible.builtin.set_fact:
+    real_os_release: >-
+      {{ (lsb_release_raw.content | b64decode).splitlines()
+         | select('match', '^DISTRIB_CODENAME=')
+         | map('regex_replace', '^DISTRIB_CODENAME=', '')
+         | list | first | lower }}
+  when: ansible_distribution|lower == "linux mint"
+
+- name: Set distribution release on other distributions than linux mint
+  ansible.builtin.set_fact:
+    real_os_release: "{{ ansible_distribution_release | lower }}"
+  when: ansible_distribution|lower != "linux mint"
+
 - name: Add KeepassXC repo using key from URL
   ansible.builtin.deb822_repository:
     name: keepassxc-ppa
     types: [deb, deb-src]
     uris: https://ppa.launchpadcontent.net/phoerious/keepassxc/ubuntu
-    suites: ["{{ ansible_distribution_release | lower }}"]
+    suites: ["{{ real_os_release }}"]
     components: [main]
     signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
     state: present
