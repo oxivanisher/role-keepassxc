@@ -20,6 +20,13 @@
     real_os_release: "{{ ansible_distribution_release | lower }}"
   when: ansible_distribution|lower != "linux mint"
 
+- name: Ensure python3-debian is installed
+  ansible.builtin.package:
+    name: python3-debian
+    state: present
+  become: true
+  become_user: root
+
 - name: Add KeepassXC repo using key from URL
   ansible.builtin.deb822_repository:
     name: keepassxc-ppa
