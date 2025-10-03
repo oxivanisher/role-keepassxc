@@ -25,10 +25,8 @@
   ansible.builtin.set_fact:
     dist_codename: >-
       {{ (upstream_release_raw.content | b64decode |
-          regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True) | default(''))
-          if upstream_release_file.stat.exists
-          else ansible_distribution_release }}
-
+          regex_search('^DISTRIB_CODENAME=.*', multiline=True) |
+          regex_replace('^DISTRIB_CODENAME=', '')) | default('') }}
 - name: Install keepassxc only on supported distros
   when: dist_codename in ppa_codenames
   block:
