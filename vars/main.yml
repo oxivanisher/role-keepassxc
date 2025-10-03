@@ -1,2 +1,3 @@
 ---
 # vars file for keepassxc
+keepassxc_ppaurl: https://ppa.launchpadcontent.net/phoerious/keepassxc/ubuntu

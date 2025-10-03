@@ -1,49 +1,62 @@
 ---
 
-- name: Read upstream-release file on Linux mint
+- name: Fetch Nextcloud PPA dists listing
+  ansible.builtin.uri:
+    url: "{{ keepassxc_ppaurl }}"
+    return_content: true
+  register: ppa_listing
+
+- name: Parse codename list from HTML
+  ansible.builtin.set_fact:
+    ppa_codenames: "{{ ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
+
+- name: Check if upstream-release file exists
+  ansible.builtin.stat:
+    path: /etc/upstream-release/lsb-release
+  register: upstream_release_file
+
+- name: Read upstream-release file if present
   ansible.builtin.slurp:
-    src: /etc/upstream-release/lsb-release
-  register: lsb_release_raw
-  when: ansible_distribution|lower == "linux mint"
+    path: /etc/upstream-release/lsb-release
+  register: upstream_release_raw
+  when: upstream_release_file.stat.exists
 
-- name: Decode and parse DISTRIB_CODENAME from upstream-release file on Linux mint
+- name: Extract upstream codename
   ansible.builtin.set_fact:
-    real_os_release: >-
-      {{ (lsb_release_raw.content | b64decode).splitlines()
-         | select('match', '^DISTRIB_CODENAME=')
-         | map('regex_replace', '^DISTRIB_CODENAME=', '')
-         | list | first | lower }}
-  when: ansible_distribution|lower == "linux mint"
+    dist_codename: >-
+      {{ (upstream_release_raw.content | b64decode |
+          regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True))
+          if upstream_release_file.stat.exists
+          else ansible_distribution_release }}
 
-- name: Set distribution release on other distributions than linux mint
-  ansible.builtin.set_fact:
-    real_os_release: "{{ ansible_distribution_release | lower }}"
-  when: ansible_distribution|lower != "linux mint"
+- name: Install nextcloud-client only on supported distros
+  when: dist_codename in ppa_codenames
+  block:
 
-- name: Ensure python3-debian is installed
-  ansible.builtin.package:
-    name: python3-debian
-    state: present
-  become: true
-  become_user: root
+    - name: Ensure python3-debian is installed
+      ansible.builtin.package:
+        name: python3-debian
+        state: present
+      become: true
+      become_user: root
 
-- name: Add KeepassXC repo using key from URL
-  ansible.builtin.deb822_repository:
-    name: keepassxc-ppa
-    types: [deb, deb-src]
-    uris: https://ppa.launchpadcontent.net/phoerious/keepassxc/ubuntu
-    suites: ["{{ real_os_release }}"]
-    components: [main]
-    signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
-    state: present
-    enabled: true
-  become: true
-  become_user: root
+    - name: Add KeepassXC repo using key from URL
+      ansible.builtin.deb822_repository:
+        name: keepassxc-ppa
+        types: [deb, deb-src]
+        uris: "{{ keepassxc_ppaurl }}"
+        suites: ["{{ real_os_release }}"]
+        components: [main]
+        signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
+        state: present
+        enabled: true
+      become: true
+      become_user: root
 
-- name: Install KeePass XC
-  ansible.builtin.apt:
-    name: keepassxc
-    update_cache: true
-    state: present
-  become: true
-  become_user: root
+    - name: Install KeePass XC
+      ansible.builtin.apt:
+        name: keepassxc
+        update_cache: true
+        state: present
+      become: true
+      become_user: root
