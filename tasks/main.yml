@@ -4,6 +4,7 @@
   ansible.builtin.uri:
     url: "{{ keepassxc_ppaurl }}"
     return_content: true
+  check_mode: false
   register: ppa_listing
 
 - name: Parse codename list from HTML
