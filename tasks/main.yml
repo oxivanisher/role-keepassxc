@@ -27,7 +27,7 @@
     dist_codename: >-
       {{ (upstream_release_raw.content | b64decode |
           regex_search('^DISTRIB_CODENAME=.*', multiline=True) |
-          regex_replace('^DISTRIB_CODENAME=', '')) | default('') }}
+          regex_replace('^DISTRIB_CODENAME=', '')) | default(ansible_distribution_release) }}
 - name: Install keepassxc only on supported distros
   when: dist_codename in ppa_codenames
   block:
