@@ -2,7 +2,7 @@
 
 - name: Fetch Nextcloud PPA dists listing
   ansible.builtin.uri:
-    url: "{{ keepassxc_ppaurl }}"
+    url: "{{ nextcloud_client_ppaurl }}/dists"
     return_content: true
   check_mode: false
   register: ppa_listing
