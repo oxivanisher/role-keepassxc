@@ -1,5 +1,4 @@
 ---
-
 - name: Fetch Nextcloud PPA dists listing
   ansible.builtin.uri:
     url: "{{ nextcloud_client_ppaurl }}/dists"
@@ -31,13 +30,11 @@
 - name: Install keepassxc only on supported distros
   when: dist_codename in ppa_codenames
   block:
-
     - name: Ensure python3-debian is installed
       ansible.builtin.package:
         name: python3-debian
         state: present
       become: true
-      become_user: root
 
     - name: Add KeepassXC repo using key from URL
       ansible.builtin.deb822_repository:
@@ -50,7 +47,6 @@
         state: present
         enabled: true
       become: true
-      become_user: root
 
     - name: Install KeePass XC
       ansible.builtin.apt:
@@ -58,4 +54,3 @@
         update_cache: true
         state: present
       become: true
-      become_user: root
