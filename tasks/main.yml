@@ -36,14 +36,21 @@
         state: present
       become: true
 
-    - name: Add KeepassXC repo using key from URL
+    - name: Download KeePassXC PPA GPG key
+      ansible.builtin.get_url:
+        url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
+        dest: /etc/apt/keyrings/keepassxc-ppa.asc
+        mode: '0644'
+      become: true
+
+    - name: Add KeePassXC apt repository
       ansible.builtin.deb822_repository:
         name: keepassxc-ppa
         types: [deb, deb-src]
         uris: "{{ keepassxc_ppaurl }}"
         suites: ["{{ dist_codename }}"]
         components: [main]
-        signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
+        signed_by: /etc/apt/keyrings/keepassxc-ppa.asc
         state: present
         enabled: true
       become: true
