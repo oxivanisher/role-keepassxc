@@ -1,7 +1,7 @@
 ---
-- name: Fetch Nextcloud PPA dists listing
+- name: Fetch KeePassXC PPA dists listing
   ansible.builtin.uri:
-    url: "{{ nextcloud_client_ppaurl }}/dists"
+    url: "{{ keepassxc_ppaurl }}/dists"
     return_content: true
   check_mode: false
   register: ppa_listing
@@ -36,17 +36,24 @@
         state: present
       become: true
 
+    - name: Check if KeePassXC PPA binary keyring exists
+      ansible.builtin.stat:
+        path: /etc/apt/keyrings/keepassxc-ppa.gpg
+      register: keepassxc_gpg_stat
+
     - name: Download KeePassXC PPA GPG key
       ansible.builtin.get_url:
         url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
         dest: /etc/apt/keyrings/keepassxc-ppa.asc
         mode: '0644'
+      when: not keepassxc_gpg_stat.stat.exists
       become: true
 
     - name: Convert KeePassXC PPA GPG key to binary keyring
       ansible.builtin.command:
         cmd: gpg --dearmor -o /etc/apt/keyrings/keepassxc-ppa.gpg /etc/apt/keyrings/keepassxc-ppa.asc
         creates: /etc/apt/keyrings/keepassxc-ppa.gpg
+      when: not keepassxc_gpg_stat.stat.exists
       become: true
 
     - name: Add KeePassXC apt repository
