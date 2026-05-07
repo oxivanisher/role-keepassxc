@@ -43,6 +43,12 @@
         mode: '0644'
       become: true
 
+    - name: Convert KeePassXC PPA GPG key to binary keyring
+      ansible.builtin.command:
+        cmd: gpg --dearmor -o /etc/apt/keyrings/keepassxc-ppa.gpg /etc/apt/keyrings/keepassxc-ppa.asc
+        creates: /etc/apt/keyrings/keepassxc-ppa.gpg
+      become: true
+
     - name: Add KeePassXC apt repository
       ansible.builtin.deb822_repository:
         name: keepassxc-ppa
@@ -50,7 +56,7 @@
         uris: "{{ keepassxc_ppaurl }}"
         suites: ["{{ dist_codename }}"]
         components: [main]
-        signed_by: /etc/apt/keyrings/keepassxc-ppa.asc
+        signed_by: /etc/apt/keyrings/keepassxc-ppa.gpg
         state: present
         enabled: true
       become: true
