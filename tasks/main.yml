@@ -4,31 +4,31 @@
     url: "{{ keepassxc_ppaurl }}/dists"
     return_content: true
   check_mode: false
-  register: ppa_listing
+  register: keepassxc_ppa_listing
 
 - name: Parse codename list from HTML
   ansible.builtin.set_fact:
-    ppa_codenames: "{{ ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
+    keepassxc_ppa_codenames: "{{ keepassxc_ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
 
 - name: Check if upstream-release file exists
   ansible.builtin.stat:
     path: /etc/upstream-release/lsb-release
-  register: upstream_release_file
+  register: keepassxc_upstream_release_file
 
 - name: Read upstream-release file if present
   ansible.builtin.slurp:
     path: /etc/upstream-release/lsb-release
-  register: upstream_release_raw
-  when: upstream_release_file.stat.exists
+  register: keepassxc_upstream_release_raw
+  when: keepassxc_upstream_release_file.stat.exists
 
 - name: Extract upstream codename
   ansible.builtin.set_fact:
-    dist_codename: >-
-      {{ (upstream_release_raw.content | b64decode |
+    keepassxc_dist_codename: >-
+      {{ (keepassxc_upstream_release_raw.content | b64decode |
           regex_search('^DISTRIB_CODENAME=.*', multiline=True) |
           regex_replace('^DISTRIB_CODENAME=', '')) | default(ansible_facts.distribution_release) }}
 - name: Install keepassxc only on supported distros
-  when: dist_codename in ppa_codenames
+  when: keepassxc_dist_codename in keepassxc_ppa_codenames
   block:
     - name: Ensure python3-debian is installed
       ansible.builtin.package:
@@ -61,7 +61,7 @@
         name: keepassxc-ppa
         types: [deb, deb-src]
         uris: "{{ keepassxc_ppaurl }}"
-        suites: ["{{ dist_codename }}"]
+        suites: ["{{ keepassxc_dist_codename }}"]
         components: [main]
         signed_by: /etc/apt/keyrings/keepassxc-ppa.gpg
         state: present
