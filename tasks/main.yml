@@ -1,76 +1,44 @@
 ---
+- name: Determine distribution codename (upstream codename on derivatives like Linux Mint)
+  ansible.builtin.include_tasks: detect_codename.yml
+  when: keepassxc_install_method in ['auto', 'ppa']
+
 - name: Fetch KeePassXC PPA dists listing
   ansible.builtin.uri:
     url: "{{ keepassxc_ppaurl }}/dists"
     return_content: true
   check_mode: false
   register: keepassxc_ppa_listing
+  when: keepassxc_install_method in ['auto', 'ppa']
 
 - name: Parse codename list from HTML
   ansible.builtin.set_fact:
     keepassxc_ppa_codenames: "{{ keepassxc_ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
+  when: keepassxc_install_method in ['auto', 'ppa']
 
-- name: Check if upstream-release file exists
-  ansible.builtin.stat:
-    path: /etc/upstream-release/lsb-release
-  register: keepassxc_upstream_release_file
-
-- name: Read upstream-release file if present
-  ansible.builtin.slurp:
-    path: /etc/upstream-release/lsb-release
-  register: keepassxc_upstream_release_raw
-  when: keepassxc_upstream_release_file.stat.exists
-
-- name: Extract upstream codename
+- name: Select installation method
   ansible.builtin.set_fact:
-    keepassxc_dist_codename: >-
-      {{ (keepassxc_upstream_release_raw.content | b64decode |
-          regex_search('^DISTRIB_CODENAME=.*', multiline=True) |
-          regex_replace('^DISTRIB_CODENAME=', '')) | default(ansible_facts.distribution_release) }}
-- name: Install keepassxc only on supported distros
-  when: keepassxc_dist_codename in keepassxc_ppa_codenames
-  block:
-    - name: Ensure python3-debian is installed
-      ansible.builtin.package:
-        name: python3-debian
-        state: present
-      become: true
+    keepassxc_selected_method: >-
+      {{ keepassxc_install_method if keepassxc_install_method != 'auto'
+         else ('ppa' if keepassxc_dist_codename in keepassxc_ppa_codenames
+               else keepassxc_fallback_method) }}
 
-    - name: Check if KeePassXC PPA binary keyring exists
-      ansible.builtin.stat:
-        path: /etc/apt/keyrings/keepassxc-ppa.gpg
-      register: keepassxc_gpg_stat
+- name: Show selected installation method
+  ansible.builtin.debug:
+    msg: "Installing KeePassXC via {{ keepassxc_selected_method }}"
 
-    - name: Download KeePassXC PPA GPG key
-      ansible.builtin.get_url:
-        url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6"
-        dest: /etc/apt/keyrings/keepassxc-ppa.asc
-        mode: '0644'
-      when: not keepassxc_gpg_stat.stat.exists
-      become: true
+- name: Install KeePassXC from the PPA
+  ansible.builtin.include_tasks: ppa.yml
+  when: keepassxc_selected_method == 'ppa'
 
-    - name: Convert KeePassXC PPA GPG key to binary keyring
-      ansible.builtin.command:
-        cmd: gpg --dearmor -o /etc/apt/keyrings/keepassxc-ppa.gpg /etc/apt/keyrings/keepassxc-ppa.asc
-        creates: /etc/apt/keyrings/keepassxc-ppa.gpg
-      when: not keepassxc_gpg_stat.stat.exists
-      become: true
+- name: Install KeePassXC from Flathub
+  ansible.builtin.include_tasks: flatpak.yml
+  when: keepassxc_selected_method == 'flatpak'
 
-    - name: Add KeePassXC apt repository
-      ansible.builtin.deb822_repository:
-        name: keepassxc-ppa
-        types: [deb, deb-src]
-        uris: "{{ keepassxc_ppaurl }}"
-        suites: ["{{ keepassxc_dist_codename }}"]
-        components: [main]
-        signed_by: /etc/apt/keyrings/keepassxc-ppa.gpg
-        state: present
-        enabled: true
-      become: true
-
-    - name: Install KeePass XC
-      ansible.builtin.apt:
-        name: keepassxc
-        update_cache: true
-        state: present
-      become: true
+- name: Install KeePassXC from the distribution repositories
+  ansible.builtin.apt:
+    name: "{{ keepassxc_distro_package }}"
+    update_cache: true
+    state: present
+  become: true
+  when: keepassxc_selected_method == 'distro'

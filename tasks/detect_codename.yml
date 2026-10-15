@@ -1,0 +1,20 @@
+---
+- name: Check if upstream-release file exists
+  ansible.builtin.stat:
+    path: /etc/upstream-release/lsb-release
+  register: keepassxc_upstream_release_file
+
+- name: Read upstream-release file if present
+  ansible.builtin.slurp:
+    path: /etc/upstream-release/lsb-release
+  register: keepassxc_upstream_release_raw
+  when: keepassxc_upstream_release_file.stat.exists
+
+- name: Extract upstream codename
+  ansible.builtin.set_fact:
+    keepassxc_dist_codename: >-
+      {{ (keepassxc_upstream_release_raw.content | b64decode |
+          regex_search('^DISTRIB_CODENAME=.*', multiline=True) |
+          regex_replace('^DISTRIB_CODENAME=', ''))
+         if keepassxc_upstream_release_file.stat.exists
+         else ansible_facts.distribution_release }}
