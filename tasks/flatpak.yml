@@ -1,0 +1,32 @@
+---
+- name: Remove KeePassXC distribution package to avoid two competing installs
+  ansible.builtin.apt:
+    name:
+      - keepassxc
+      - keepassxc-full
+      - keepassxc-minimal
+    state: absent
+  become: true
+  when: keepassxc_flatpak_remove_distro_package
+
+- name: Ensure flatpak is installed
+  ansible.builtin.apt:
+    name: flatpak
+    state: present
+  become: true
+
+- name: Ensure the Flathub remote is configured
+  community.general.flatpak_remote:
+    name: flathub
+    flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+    method: system
+    state: present
+  become: true
+
+- name: Install KeePassXC from Flathub
+  community.general.flatpak:
+    name: org.keepassxc.KeePassXC
+    remote: flathub
+    method: system
+    state: present
+  become: true

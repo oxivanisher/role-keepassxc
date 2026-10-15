@@ -1,2 +1,19 @@
 ---
 # defaults file for keepassxc
+
+# How to install KeePassXC:
+#   auto    - use the upstream PPA when it publishes the distribution codename
+#             (Ubuntu and derivatives such as Linux Mint), otherwise use
+#             keepassxc_fallback_method
+#   ppa     - always use the PPA
+#   flatpak - always use Flathub (current upstream release, amd64 and arm64)
+#   distro  - use the distribution's own package (may lag behind upstream)
+keepassxc_install_method: auto
+keepassxc_fallback_method: flatpak
+
+# Package name used with keepassxc_install_method "distro". Debian trixie
+# provides keepassxc-full (with browser integration) and keepassxc-minimal.
+keepassxc_distro_package: keepassxc-full
+
+# Remove an apt-installed KeePassXC when switching a host to the flatpak.
+keepassxc_flatpak_remove_distro_package: true
